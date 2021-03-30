@@ -16,7 +16,7 @@ function onLoad() {
     packages = data.Packages
 
     // Show initial (root) packages.
-    $('#roots').text(data.Roots.map(i => packages[i]).join("\n"))
+    $('#roots').text(data.Roots.map(i => packages[i].PkgPath).join("\n"))
     
     // Show broken edges.
     broken = data.Broken
@@ -31,28 +31,38 @@ function onLoad() {
 
     // Populate package/module "directory" tree.
     $('#tree').jstree({
-	"core" : {
-	    "animation" : 0,
-	    "check_callback" : true,
-	    'data' : data.Tree,
+	"core": {
+	    "animation": 0,
+	    "check_callback": true,
+	    'data': data.Tree,
 	},
-	"types" : {
-	    "#" : {
+	"types": {
+	    "#": {
 	    },
-	    "root" : {
-		"icon" : "/static/3.3.11/assets/images/tree_icon.png"
+	    "root": {
+		"icon": "/static/3.3.11/assets/images/tree_icon.png"
 	    },
 	    "module": {
-		"icon" : "https://jstree.com/static/3.3.11/assets/images/tree_icon.png"
+		"icon": "https://jstree.com/static/3.3.11/assets/images/tree_icon.png"
 	    },
 	    "default": {
 	    },
-	    "pkg" : {
+	    "pkg": {
 		"icon": "https://old.jstree.com//static/v.1.0pre/_demo/file.png"
 	    }
 	},
-	"plugins" : ["contextmenu", "dnd", "search", "state", "types", "wholerow"],
+	"plugins": ["search", "state", "types", "wholerow"],
+	"search": {
+	    "case_sensitive": false,
+	    "show_only_matches": true,
+	}
     })
+
+    // Search the tree when the user types in the search box.
+    $("#search").keyup(function () {
+        var searchString = $(this).val();
+        $('#tree').jstree('search', searchString);
+    });
     
     // Show package info when a node is clicked.
     $('#tree').on("changed.jstree", function (e, data) {
@@ -83,7 +93,7 @@ function selectPkg(json) {
     
     // TODO(adonovan): display imports as a set of links,
     // with as ImportPath text and "select dir tree node" as action.
-    if (json.Imports != null) {
+    if (json.Imports != null) { // TODO(adonovan): how can this be null?
 	$('#imports').text(json.Imports.join(" "))
     }
     

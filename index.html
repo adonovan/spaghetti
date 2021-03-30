@@ -32,6 +32,11 @@
 	of the graph rooted at the node, divided by the node's
 	in-degree. Click a package to show more information about
 	it.</span></span>
+    <form style='display: inline;'>
+      <label for='search'>Filter:
+	<input id='search' type='text' name='filter' size='50'/></label>
+      <button onclick='this.form.search.value=""'>Clear</button>
+    </form>
   </p>
   <div style='overflow: auto; width: 65%; height: 20em; border: thin solid grey; display: inline-block'>
     <div style='height: 20em;' id='tree'>tree</div>
@@ -46,7 +51,7 @@
     <span class="tooltip">ⓘ<span class="tooltiptext">This list shows the packages
 	directly imported by the selected package</span></span>   
     <label for='imports'>Imports:</label>
-    <code><span id='imports'>...</span></code>
+    <code id='imports'>...</code>
   </p>
   <p>
     <span class="tooltip">ⓘ<span class="tooltiptext">Node x dominates

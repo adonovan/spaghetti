@@ -2,6 +2,7 @@ body { margin: 1em; font-family: "Minion Pro", serif; }
 h1, h2, h3, h4, .jstree-default { font-family: Lato; } 
 code, pre { font-family: Consolas, monospace; }
 button { font-size: 50%; }
+pre#imports { font-size: 50%; max-height: 3em; overflow: scroll; }
 
 /* the ⓘ symbol */
 .tooltip {
