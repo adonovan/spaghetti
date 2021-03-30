@@ -1,4 +1,4 @@
-// The Spaghetti command runs a local web-server that provides an
+// The Spaghetti command runs a local web server that provides an
 // interactive single-user tool for visualizing the package
 // dependencies of a Go program with a view to refactoring.
 //
@@ -20,15 +20,12 @@ import (
 )
 
 // TODO:
-// - select the root nodes initially
-// - need more rigor with IDs:
-//  - packages.Package.ID is unique but not so user friendly.
-//   - import path is more intuitive.
-//   - DOM nodes are not hygienic.
-//   - std packages should be placed in a subtree.
-//   - PkgPaths are not unique due to versions
-// - audit for security
+// - select the root nodes initially in the dir tree.
+// - need more rigor with IDs. Test on a project with multiple versioned modules.
 // - test with multiple module versions
+// - support gopackages -test option.
+// - prettier dir tree labels (it's HTML)
+// - document that server is not concurrency-safe.
 
 func main() {
 	log.SetPrefix("spaghetti: ")
@@ -40,7 +37,7 @@ func main() {
 
 	config := &packages.Config{
 		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedModule | packages.NeedFiles,
-		// TODO Test: true,
+		// TODO(adonovan): support "Test: true,"
 	}
 	initial, err := packages.Load(config, flag.Args()...)
 	if err != nil {
@@ -83,8 +80,8 @@ func main() {
 	recompute()
 
 	http.Handle("/data", http.HandlerFunc(onData))
-	http.Handle("/break", http.HandlerFunc(onBreakEdge))
-	http.Handle("/unbreak", http.HandlerFunc(onUnbreakEdge))
+	http.Handle("/break", http.HandlerFunc(onBreak))
+	http.Handle("/unbreak", http.HandlerFunc(onUnbreak))
 	http.Handle("/", http.FileServer(http.FS(content)))
 
 	const addr = "localhost:18080"
@@ -94,9 +91,7 @@ func main() {
 	}
 }
 
-// Globals shared with HTTP handlers.
-// The graph. Populated by main and then updated by 'remove' calls.
-// Only some fields of node are modified.
+// Global server state, modified by HTTP handlers.
 var (
 	allnodes []*node    // all package nodes, in packages.Visit order
 	rootdir  *dirent    // root of module/package "directory" tree
@@ -153,6 +148,7 @@ func recompute() {
 	rootdir = new(dirent)
 	for _, n := range allnodes {
 		if n.isroot || n.from != nil {
+			// FIXME Use of n.ID here is fishy.
 			getDirent(n.ID, n.modpath, n.modversion).node = n
 		}
 	}
@@ -178,8 +174,6 @@ type node struct {
 func sortNodes(nodes []*node) {
 	sort.Slice(nodes, func(i, j int) bool { return nodes[i].index < nodes[j].index })
 }
-
-// Three different graphs: directory tree, dependency DAG, dominator tree.
 
 // A dirent is an entry in the package directory tree.
 type dirent struct {
@@ -236,12 +230,12 @@ func getDirent(name, modpath, modversion string) *dirent {
 	return e
 }
 
-// handleData emits the initial JSON data: the directory tree of
-// packages (in jsTree form) and the list of packages.
-// (This is overkill. The graph is so small we don't need AJAX callbacks.)
+// onData handles the /data endpoint. It emits all the server's state as JSON:
+// the list of root packages, the directory tree of packages in jsTree form,
+// the canonical array of reachable packages, and the list of broken edges.
 func onData(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
+	// All ints in the JSON are indices into the packages array.
 	type treeitem struct {
 		// These three fields are used by jsTree
 		ID     string `json:"id"` // id of DOM element
@@ -251,25 +245,25 @@ func onData(w http.ResponseWriter, req *http.Request) {
 
 		// Any additional fields will be accessible
 		// in the jstree node's .original field.
-		Package    *packages.Package
+		Package    int
 		Imports    []string
 		Dominators []string
-		Path       []int // from package to root, inclusive of endpoints
+		Path       []int // path from package to a root, inclusive of endpoints
 	}
 	var payload struct {
+		Roots    []int
 		Tree     []treeitem
 		Packages []*packages.Package
-		Broken   [][2]int
-		Roots    []string
+		Broken   [][2]int // (from, to) indices in packages array
 	}
 
-	// graph nodes (packages)
+	// roots and graph nodes (packages)
 	for _, n := range allnodes {
-		payload.Packages = append(payload.Packages, n.Package)
-
 		if n.isroot {
-			payload.Roots = append(payload.Roots, n.Package.PkgPath)
+			payload.Roots = append(payload.Roots, n.index)
 		}
+
+		payload.Packages = append(payload.Packages, n.Package)
 	}
 
 	// broken edges
@@ -291,15 +285,20 @@ func onData(w http.ResponseWriter, req *http.Request) {
 			item := treeitem{ID: e.id(), Text: e.name}
 			if e.node != nil {
 				// package node: show flow weight
-				item.Text = fmt.Sprintf("%s (%d)", e.name, e.node.weight)
-				item.Type = "pkg" // TODO also "module", "dir"
-				// TODO item.State = { 'opened' : true, 'selected' : true }
+				// (This is HTML, not text.)
+				item.Text = fmt.Sprintf("%s <i>(%d)</i>", e.name, e.node.weight)
 
-				item.Package = e.node.Package
+				// TODO(adonovan): use "module", "dir" node types too.
+				item.Type = "pkg"
+
+				// TODO(adonovan): pre-open the tree to the first root node
+				// item.State = { 'opened' : true, 'selected' : true }
+
+				item.Package = e.node.index
 				for _, imp := range e.node.imports {
 					item.Imports = append(item.Imports, imp.Package.ID)
 				}
-				for n := e.node.Idom(); n != nil; n = n.Idom() {
+				for n := e.node; n != nil; n = n.Idom() {
 					item.Dominators = append(item.Dominators, n.Package.ID)
 				}
 				for n := e.node; n != nil; n = n.from {
@@ -321,34 +320,34 @@ func onData(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
-func onBreakEdge(w http.ResponseWriter, req *http.Request) {
+// onBreak handles the /break (from, to int, all bool) endpoint.
+func onBreak(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseForm(); err != nil {
 		log.Println(err)
-		return // TODO handle gracefully
+		return
 	}
 
-	// TODO validation
 	to, _ := strconv.Atoi(req.Form.Get("to"))
 	toNode := allnodes[to]
 
 	all, _ := strconv.ParseBool(req.Form.Get("all"))
 	if all {
-		// break all incoming edges to toNode.
+		// break all edges '* --> to'.
 		for _, fromNode := range toNode.importedBy {
-			log.Printf("Break edge %s --> %s", fromNode, toNode)
 			broken = append(broken, [2]*node{fromNode, toNode})
 			fromNode.imports = remove(fromNode.imports, toNode)
 		}
 		toNode.importedBy = nil
 
 	} else {
-		// break from-->to
+		// break edge 'from --> to'
 		from, _ := strconv.Atoi(req.Form.Get("from"))
 		fromNode := allnodes[from]
-		log.Printf("Break edge %s --> %s", fromNode, toNode)
 		broken = append(broken, [2]*node{fromNode, toNode})
 		fromNode.imports = remove(fromNode.imports, toNode)
 		toNode.importedBy = remove(toNode.importedBy, fromNode)
@@ -359,40 +358,7 @@ func onBreakEdge(w http.ResponseWriter, req *http.Request) {
 	http.Redirect(w, req, "/index.html", http.StatusTemporaryRedirect)
 }
 
-func onUnbreakEdge(w http.ResponseWriter, req *http.Request) {
-	if err := req.ParseForm(); err != nil {
-		log.Println(err)
-		return // TODO handle gracefully
-	}
-
-	// TODO validation
-	from, _ := strconv.Atoi(req.Form.Get("from"))
-	to, _ := strconv.Atoi(req.Form.Get("to"))
-
-	fromNode := allnodes[from]
-	toNode := allnodes[to]
-
-	log.Printf("Unbreak edge %s --> %s", fromNode, toNode)
-
-	// Remove from broken edge list.
-	o := broken[:0]
-	for _, edge := range broken {
-		if edge != [2]*node{fromNode, toNode} {
-			o = append(o, edge)
-		}
-	}
-	broken = o
-
-	fromNode.imports = append(fromNode.imports, toNode)
-	toNode.importedBy = append(toNode.importedBy, fromNode)
-
-	recompute()
-
-	http.Redirect(w, req, "/index.html", http.StatusTemporaryRedirect)
-}
-
 // remove destructively removes all occurrences of x from slice, sorts it, and returns it.
-// (It is the opposite of 'append'.)
 func remove(slice []*node, x *node) []*node {
 	for i := 0; i < len(slice); i++ {
 		if slice[i] == x {
@@ -404,4 +370,34 @@ func remove(slice []*node, x *node) []*node {
 	}
 	sortNodes(slice)
 	return slice
+}
+
+// onUnbreak handles the /unbreak (from, to int) endpoint.
+func onUnbreak(w http.ResponseWriter, req *http.Request) {
+	if err := req.ParseForm(); err != nil {
+		log.Println(err)
+		return
+	}
+
+	from, _ := strconv.Atoi(req.Form.Get("from"))
+	fromNode := allnodes[from]
+
+	to, _ := strconv.Atoi(req.Form.Get("to"))
+	toNode := allnodes[to]
+
+	// Remove from broken edge list.
+	out := broken[:0]
+	for _, edge := range broken {
+		if edge != [2]*node{fromNode, toNode} {
+			out = append(out, edge)
+		}
+	}
+	broken = out
+
+	fromNode.imports = append(fromNode.imports, toNode)
+	toNode.importedBy = append(toNode.importedBy, fromNode)
+
+	recompute()
+
+	http.Redirect(w, req, "/index.html", http.StatusTemporaryRedirect)
 }
