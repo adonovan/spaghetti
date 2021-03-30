@@ -1,4 +1,4 @@
-module spaghetti
+module github.com/adonovan/spaghetti
 
 go 1.16
 
