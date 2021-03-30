@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spaghetti</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Lato" />
+  <link rel="stylesheet" type="text/css" href="/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+  <script src="/code.js"></script>
+</head>
+<body onload='onLoad()'>
+  <h1>Spaghetti</h1>
+  <p>
+    This tool displays the complete dependencies of these root packages:
+  </p>
+  <pre id='roots'>...</pre>
+  <p>
+    Click on a package in the tree view to display information about
+    it, including a path by which it is reached from one of the
+    root packages.  Use the <i>break</i> button to remove an
+    edge from the graph, so that you can assess what edges need to be
+    broken to remove an unwanted dependency.
+  </p>
+
+  <h2>Packages</h2>
+  <p>
+    <span class="tooltip">ⓘ<span class="tooltiptext"> This tree shows
+	all dependencies of the root packages, grouped hierarchically
+	by import path and containing module. <br/> Each package has a
+	numeric weight, computed using network flow: this is the size
+	of the graph rooted at the node, divided by the node's
+	in-degree. Click a package to show more information about
+	it.</span></span>
+  </p>
+  <div style='overflow: auto; width: 65%; height: 20em; border: thin solid grey; display: inline-block'>
+    <div style='height: 20em;' id='tree'>tree</div>
+  </div>
+
+  <h2>Selected package: <span id='pkgname'>N/A</span></h2>
+  <div id='json' style='display: none; overflow: scroll'>...</div> <!-- debugging -->
+  <p>
+    [<span id='doc'>...</span>]<br/>
+  </p>
+  <p>
+    <span class="tooltip">ⓘ<span class="tooltiptext">This list shows the packages
+	directly imported by the selected package</span></span>   
+    <label for='imports'>Imports:</label>
+    <code><span id='imports'>...</span></code>
+  </p>
+  <p>
+    <span class="tooltip">ⓘ<span class="tooltiptext">Node x dominates
+    node y if y cannot be reached without going through x. One way to
+    break a dependency on a package y is to break a dependency on any
+    of its dominators x.</span></span>   
+    <label for='dom'>Dominators:</label> 
+    <span id='dom'>...</span>
+  </p>
+  <p>
+    <span class="tooltip">ⓘ<span class="tooltiptext">This section
+	displays an arbitrary path from one of the initial packages to
+	the selected package. Click the <i>break</i> button so see how
+	your dependencies would change if you were to remove a single
+	edge. Click <i>break all</i> to remove all inbound edges to a
+	package, removing it from the graph. This may be useful for
+	removing distracting packages that you don't plan to
+	eliminate.
+    </span></span>
+    <label for='path'>Path from initial package:</label>
+    <div id='path'></div>
+  </p>
+  
+  <h2>Broken edges</h2>
+  <span class="tooltip">ⓘ<span class="tooltiptext">This section lists
+      the edges you have broken so far. Click <i>unbreak</i> to
+      restore an edge and update the graph. Once you are happy with
+      the dependencies, you can use this as your to-do list for
+      refactoring.</span></span>
+  <div id='broken'>...</div>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+body { margin: 1em; font-family: "Minion Pro", serif; }
+h1, h2, h3, h4, .jstree-default { font-family: Lato; } 
+code, pre { font-family: Consolas, monospace; }
+button { font-size: 50%; }
+
+/* the ⓘ symbol */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted blue;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 300px;
+  background-color: #eff;
+  color: #333;
+  border-radius: 6px;
+  border: thin solid blue;
+  padding: 1em;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+
