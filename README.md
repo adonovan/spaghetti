@@ -22,9 +22,9 @@ edges becomes your task list for a clean-up project.
 Run it like so:
 
 ```shell
-$ go install github.com/adonovan/spaghetti@latest
-$ spaghetti [package] & 
-$ open http://localhost:8080          # or xdg-open, chrome, firefox
+$ go install github.com/adonovan/spaghetti@latest   # install in $HOME/go/bin
+$ ~/go/bin/spaghetti [package] &                    # run the server
+$ open http://localhost:8080                        # open in chrome, firefox, etc
 ```
 
 where _package_ is or more Go packages, or a pattern understood by `go
