@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"sort"
 	"strconv"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -34,6 +36,7 @@ func main() {
 		log.Fatalf("need package arguments")
 	}
 
+	// Load packages and their dependencies.
 	config := &packages.Config{
 		Mode: packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedModule | packages.NeedFiles,
 		// TODO(adonovan): support "Test: true,"
@@ -41,6 +44,16 @@ func main() {
 	initial, err := packages.Load(config, flag.Args()...)
 	if err != nil {
 		log.Fatal(err)
+	}
+	nerrs := 0
+	for _, p := range initial {
+		for _, err := range p.Errors {
+			fmt.Fprintln(os.Stderr, err)
+			nerrs++
+		}
+	}
+	if nerrs > 0 {
+		log.Fatalf("failed to load initial packages. Ensure this command works first:\n\t$ go list %s", strings.Join(flag.Args(), " "))
 	}
 
 	// The dominator computation algorithm needs a single root.
@@ -296,7 +309,7 @@ func onData(w http.ResponseWriter, req *http.Request) {
 			item := treeitem{ID: e.id(), Text: e.name, Package: -1}
 			if e.node != nil {
 				// package node: show flow weight
-				// (This is HTML, not text.)
+				// TODO(adonovan): improve node label. This is HTML, not text.
 				item.Text = fmt.Sprintf("%s <i>(%d)</i>", e.name, e.node.weight)
 
 				// TODO(adonovan): use "module", "dir" node types too.
