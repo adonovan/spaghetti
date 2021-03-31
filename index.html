@@ -12,26 +12,29 @@
 <body onload='onLoad()'>
   <h1>Spaghetti</h1>
   <p>
-    This tool displays the complete dependencies of these root packages:
+    This tool displays the complete dependencies of these initial packages:
   </p>
-  <pre id='roots'>...</pre>
+  <pre id='initial'>...</pre>
   <p>
     Click on a package in the tree view to display information about
     it, including a path by which it is reached from one of the
-    root packages.  Use the <i>break</i> button to remove an
+    initial packages.  Use the <i>break</i> button to remove an
     edge from the graph, so that you can assess what edges need to be
     broken to remove an unwanted dependency.
   </p>
 
   <h2>Packages</h2>
   <p>
-    <span class="tooltip">ⓘ<span class="tooltiptext"> This tree shows
-	all dependencies of the root packages, grouped hierarchically
-	by import path and containing module. <br/> Each package has a
-	numeric weight, computed using network flow: this is the size
-	of the graph rooted at the node, divided by the node's
-	in-degree. Click a package to show more information about
-	it.</span></span>
+    <span class="tooltip">ⓘ<span class="tooltiptext">
+	This tree shows all dependencies of the initial packages,
+	grouped hierarchically by import path and containing
+	module. <br/>
+
+	Each package has a numeric weight, computed using network
+	flow: this is the size of the graph rooted at the node,
+	divided by the node's in-degree. <br/>
+
+	Click a package to show more information aboutit.</span></span>
     <form style='display: inline;'>
       <label for='search'>Filter:
 	<input id='search' type='text' name='filter' size='50'/></label>
@@ -42,7 +45,7 @@
     <div style='height: 20em;' id='tree'>tree</div>
   </div>
 
-  <h2>Selected package: <span id='pkgname'>N/A</span></h2>
+  <h2>Selected package: <span id='pkgname'>none</span></h2>
   <div id='json' style='display: none; overflow: scroll'>...</div> <!-- debugging -->
   <p>
     [<span id='doc'>...</span>]<br/>
@@ -54,14 +57,6 @@
     <code id='imports'>...</code>
   </p>
   <p>
-    <span class="tooltip">ⓘ<span class="tooltiptext">Node x dominates
-    node y if y cannot be reached without going through x. One way to
-    break a dependency on a package y is to break a dependency on any
-    of its dominators x.</span></span>   
-    <label for='dom'>Dominators:</label> 
-    <span id='dom'>...</span>
-  </p>
-  <p>
     <span class="tooltip">ⓘ<span class="tooltiptext">This section
 	displays an arbitrary path from one of the initial packages to
 	the selected package. Click the <i>break</i> button so see how
@@ -70,6 +65,9 @@
 	package, removing it from the graph. This may be useful for
 	removing distracting packages that you don't plan to
 	eliminate.
+	The bold nodes are <i>dominators</i>: nodes that are found on
+	every path to the selected node. One way to break a dependency
+	on a package is to break all dependencies on any of its dominators.
     </span></span>
     <label for='path'>Path from initial package:</label>
     <div id='path'></div>

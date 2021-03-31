@@ -20,9 +20,8 @@ import (
 )
 
 // TODO:
-// - select the root nodes initially in the dir tree.
+// - select the initial nodes initially in the dir tree.
 // - need more rigor with IDs. Test on a project with multiple versioned modules.
-// - test with multiple module versions
 // - support gopackages -test option.
 // - prettier dir tree labels (it's HTML)
 // - document that server is not concurrency-safe.
@@ -44,10 +43,27 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create nodes in deterministic preorder.
+	// The dominator computation algorithm needs a single root.
+	// Synthesize one as needed that imports the initial packages;
+	// the UI does not expose its existence.
+	rootpkg := initial[0]
+	if len(initial) > 1 {
+		imports := make(map[string]*packages.Package)
+		for i, pkg := range initial {
+			imports[fmt.Sprintf("%03d", i)] = pkg
+		}
+		rootpkg = &packages.Package{
+			ID:      "(root)",
+			Name:    "synthetic root package",
+			PkgPath: "(root)",
+			Imports: imports,
+		}
+	}
+
+	// Create nodes in deterministic preorder, distinguished root first.
 	// Node numbering determines search results, and we want stability.
 	nodes := make(map[string]*node) // map from Package.ID
-	packages.Visit(initial, func(pkg *packages.Package) bool {
+	packages.Visit([]*packages.Package{rootpkg}, func(pkg *packages.Package) bool {
 		n := &node{Package: pkg, index: len(allnodes)}
 		if pkg.Module != nil {
 			n.modpath = pkg.Module.Path
@@ -61,7 +77,7 @@ func main() {
 		return true
 	}, nil)
 	for _, pkg := range initial {
-		nodes[pkg.ID].isroot = true
+		nodes[pkg.ID].initial = true
 	}
 
 	// Create edges, in arbitrary order.
@@ -93,7 +109,7 @@ func main() {
 
 // Global server state, modified by HTTP handlers.
 var (
-	allnodes []*node    // all package nodes, in packages.Visit order
+	allnodes []*node    // all package nodes, in packages.Visit order (root first)
 	rootdir  *dirent    // root of module/package "directory" tree
 	broken   [][2]*node // broken edges
 )
@@ -109,7 +125,6 @@ func recompute() {
 
 	// Record the path to every node from the root.
 	// The path is arbitrary but determined by edge sort order.
-	// Visit nodes and record the first search path from a root node.
 	var setPath func(n, from *node)
 	setPath = func(n, from *node) {
 		if n.from == nil {
@@ -119,11 +134,7 @@ func recompute() {
 			}
 		}
 	}
-	for _, n := range allnodes {
-		if n.isroot {
-			setPath(n, nil)
-		}
-	}
+	setPath(allnodes[0], nil)
 
 	// Compute dominator tree.
 	buildDomTree(allnodes)
@@ -140,14 +151,12 @@ func recompute() {
 		}
 		return n.weight
 	}
-	for _, n := range allnodes {
-		weight(n)
-	}
+	weight(allnodes[0])
 
-	// Create tree of reachable modules/packages.
+	// Create tree of reachable modules/packages. Excludes synthetic root, if any.
 	rootdir = new(dirent)
 	for _, n := range allnodes {
-		if n.isroot || n.from != nil {
+		if n.initial || n.from != nil { // reachable?
 			// FIXME Use of n.ID here is fishy.
 			getDirent(n.ID, n.modpath, n.modversion).node = n
 		}
@@ -157,18 +166,19 @@ func recompute() {
 //go:embed index.html style.css code.js
 var content embed.FS
 
+// A node is a vertex in the package dependency graph (a DAG).
 type node struct {
 	// These fields are immutable.
-	*packages.Package
-	index               int // in allnodes numbering
-	isroot              bool
+	*packages.Package          // information about the package
+	index               int    // in allnodes numbering
+	initial             bool   // package was among set of initial roots
 	modpath, modversion string // module, or ("std", "") for standard packages
 
 	// These fields are recomputed after a graph change.
 	imports, importedBy []*node // graph edges
 	weight              int     // weight computed by network flow
 	from                *node   // next link in path from a root node (nil if root)
-	dom                 domInfo
+	dom                 domInfo // dominator information
 }
 
 func sortNodes(nodes []*node) {
@@ -240,33 +250,34 @@ func onData(w http.ResponseWriter, req *http.Request) {
 		// These three fields are used by jsTree
 		ID     string `json:"id"` // id of DOM element
 		Parent string `json:"parent"`
-		Text   string `json:"text"`
+		Text   string `json:"text"` // actually HTML
 		Type   string `json:"type"`
 
 		// Any additional fields will be accessible
 		// in the jstree node's .original field.
-		Package    int
+		Package    int // -1 for non-package nodes
 		Imports    []string
-		Dominators []string
-		Path       []int // path from package to a root, inclusive of endpoints
+		Dominators []int // path through dom tree, from package to root inclusive
+		Path       []int // path through package graph, from package to root inclusive
 	}
 	var payload struct {
-		Roots    []int
+		Initial  []int
 		Tree     []treeitem
 		Packages []*packages.Package
-		Broken   [][2]int // (from, to) indices in packages array
+		Broken   [][2]int // (from, to) node indices
 	}
 
 	// roots and graph nodes (packages)
 	for _, n := range allnodes {
-		if n.isroot {
-			payload.Roots = append(payload.Roots, n.index)
+		if n.initial {
+			payload.Initial = append(payload.Initial, n.index)
 		}
 
 		payload.Packages = append(payload.Packages, n.Package)
 	}
 
 	// broken edges
+	payload.Broken = [][2]int{} // avoid JSON null
 	for _, edge := range broken {
 		payload.Broken = append(payload.Broken, [2]int{edge[0].index, edge[1].index})
 	}
@@ -282,7 +293,7 @@ func onData(w http.ResponseWriter, req *http.Request) {
 		for _, name := range names {
 			e := children[name]
 
-			item := treeitem{ID: e.id(), Text: e.name}
+			item := treeitem{ID: e.id(), Text: e.name, Package: -1}
 			if e.node != nil {
 				// package node: show flow weight
 				// (This is HTML, not text.)
@@ -295,13 +306,15 @@ func onData(w http.ResponseWriter, req *http.Request) {
 				// item.State = { 'opened' : true, 'selected' : true }
 
 				item.Package = e.node.index
+				item.Imports = []string{} // avoid JSON null
 				for _, imp := range e.node.imports {
 					item.Imports = append(item.Imports, imp.Package.ID)
 				}
 				for n := e.node; n != nil; n = n.Idom() {
-					item.Dominators = append(item.Dominators, n.Package.ID)
+					item.Dominators = append(item.Dominators, n.index)
 				}
-				for n := e.node; n != nil; n = n.from {
+				// Don't show the synthetic root node (if any) in the path.
+				for n := e.node; n != nil && n.ID != "(root)"; n = n.from {
 					item.Path = append(item.Path, n.index)
 				}
 			}

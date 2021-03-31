@@ -5,18 +5,18 @@ var broken = null // array of 2-arrays of int, the node ids of broken edges.
 
 function onLoad() {
     // Grab data from server: package graph, "directory" tree, broken edges.
-    var data = null
-    jQuery.ajax({
-	url: "/data",
-	async: false,
-	success: function(json) {data = json},
-    })
+    // TODO(adonovan): opt: put JSON data in the /index.html page?
+    // There's no need for a second HTTP request.
+    jQuery.ajax({url: "/data", success: onData})
+}
 
+// onData is called shortly after page load with the result of the /data request.
+function onData(data) {
     // Save array of Package objects.
     packages = data.Packages
 
-    // Show initial (root) packages.
-    $('#roots').text(data.Roots.map(i => packages[i].PkgPath).join("\n"))
+    // Show initial packages.
+    $('#initial').text(data.Initial.map(i => packages[i].PkgPath).join("\n"))
     
     // Show broken edges.
     broken = data.Broken
@@ -58,65 +58,59 @@ function onLoad() {
 	}
     })
 
-    // Search the tree when the user types in the search box.
-    $("#search").keyup(function () {
-        var searchString = $(this).val();
-        $('#tree').jstree('search', searchString);
-    });
-    
     // Show package info when a node is clicked.
     $('#tree').on("changed.jstree", function (e, data) {
 	if (data.node) {
 	    selectPkg(data.node.original)
 	}
     })
+
+    // Search the tree when the user types in the search box.
+    $("#search").keyup(function () {
+        var searchString = $(this).val();
+        $('#tree').jstree('search', searchString);
+    });  
 }
 
 // selectPkg shows package info (if any) about the clicked node.
 function selectPkg(json) {
-    if (json.Package == null) {
-	// Non-package "directory" node: grey out the fields.
+    if (json.Package < 0) {
+	// Non-package "directory" node: clear the fields.
 	$('#json').text("")
-	$('#pkgname').text("N/A")
+	$('#pkgname').text("none")
 	$('#doc').text("")
 	$('#imports').text("")
-	$('#dom').text("")
 	$('#path').text("")
 	return
     }
 
     // A package node was selected.
-    var pkg  = packages[json.Package]
+    var pkg = packages[json.Package]
+
+    // Show JSON, for debugging.   
     $('#json').html("<code>" + JSON.stringify(json) + "</code>")
+
+    // Show selected package.
     $('#pkgname').text(pkg.PkgPath)
+
+    // Set link to package documentation.
     $('#doc').html("<a target='_blank' href='https://pkg.go.dev/" + pkg.PkgPath + "'>doc</a>")
     
     // TODO(adonovan): display imports as a set of links,
     // with as ImportPath text and "select dir tree node" as action.
-    if (json.Imports != null) { // TODO(adonovan): how can this be null?
-	$('#imports').text(json.Imports.join(" "))
-    }
-    
-    // Show dominator tree.
-    var html = ""
-    var doms = [].concat(json.Dominators).reverse()
-    for (var i in doms) {
-	html += (i > 0 ? " ⟶ " : "") + "<code>" + doms[i] + "</code>"
-    }
-    $('#dom').html(html)
+    $('#imports').text(json.Imports.join(" "))
     
     // Show "break edges" buttons.
     var html = ""
     var path = [].concat(json.Path).reverse() // from root to selected package
     for (var i in path) {
 	var p = packages[path[i]]
-	if (i == 0) { // root
-	    html += "<code>" + p.PkgPath + "</code><br/>"
-	} else {
+	if (i >= 0) {
 	    html += "<button type='button' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", false)'>break</button> "
 		+ "<button type='button' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", true)'>break all</button> "
-		+ "⟶ <code>" +  p.PkgPath + "</code><br/>"
+		+ "⟶ "
 	}
+	html += "<code class='" + (json.Dominators.includes(path[i]) ? "dom" : "") + "'>" + p.PkgPath + "</code><br/>"
     }
     $('#path').html(html)
 }

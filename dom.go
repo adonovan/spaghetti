@@ -51,8 +51,7 @@ package main
 // to avoid the need for buckets of size > 1.
 
 // Idom returns the block that immediately dominates b:
-// its parent in the dominator tree, if any.
-// Root nodes have no parent.
+// its parent in the dominator tree, if any. The root node has no parent.
 func (b *node) Idom() *node { return b.dom.idom }
 
 // Dominees returns the list of blocks that b immediately dominates:
@@ -99,7 +98,6 @@ func (lt *ltState) dfs(v *node, i int32, preorder []*node) int32 {
 
 // eval implements the EVAL part of the LT algorithm.
 func (lt *ltState) eval(v *node) *node {
-
 	u := v
 	for ; lt.ancestor[v.dom.index] != nil; v = lt.ancestor[v.dom.index] {
 		if lt.sdom[v.dom.index].dom.pre < lt.sdom[u.dom.index].dom.pre {
@@ -114,8 +112,8 @@ func (lt *ltState) link(v, w *node) {
 	lt.ancestor[w.dom.index] = v
 }
 
-// buildDomTree computes the dominator tree of f using the LT algorithm,
-// starting from the roots indicated by node.isroot.
+// buildDomTree computes the dominator tree of f using the LT algorithm.
+// The first node is the distinguished root node.
 func buildDomTree(nodes []*node) {
 	// The step numbers refer to the original LT paper; the
 	// reordering is due to Georgiadis.
@@ -125,12 +123,15 @@ func buildDomTree(nodes []*node) {
 		b.dom = domInfo{index: -1}
 	}
 
+	root := nodes[0]
+
 	// The original (ssa) implementation had the precondition
 	// that all nodes are reachable, but because of Spaghetti's
 	// "broken edges", some nodes may be unreachable.
 	// We filter them out now with another graph traversal.
 	// The domInfo.index numbering is relative to this ordering.
 	// See other "reachable hack" comments for related parts.
+	// We should combine this into step 1.
 	var reachable []*node
 	var visit func(n *node)
 	visit = func(n *node) {
@@ -142,11 +143,7 @@ func buildDomTree(nodes []*node) {
 			}
 		}
 	}
-	for _, n := range nodes {
-		if n.isroot {
-			visit(n)
-		}
-	}
+	visit(root)
 	nodes = reachable
 
 	n := len(nodes)
@@ -161,12 +158,7 @@ func buildDomTree(nodes []*node) {
 
 	// Step 1.  Number vertices by depth-first preorder.
 	preorder := space[3*n : 4*n]
-	var prenum int32
-	for _, w := range nodes {
-		if w.isroot {
-			prenum = lt.dfs(w, prenum, preorder)
-		}
-	}
+	lt.dfs(root, 0, preorder)
 
 	buckets := space[4*n : 5*n]
 	copy(buckets, preorder)
@@ -215,7 +207,7 @@ func buildDomTree(nodes []*node) {
 	// Step 4. Explicitly define the immediate dominator of each
 	// node, in preorder.
 	for _, w := range preorder[1:] {
-		if w.isroot {
+		if w == root {
 			w.dom.idom = nil
 		} else {
 			if w.dom.idom != lt.sdom[w.dom.index] {
@@ -226,12 +218,8 @@ func buildDomTree(nodes []*node) {
 		}
 	}
 
-	var pre, post int32
-	for _, w := range nodes {
-		if w.isroot {
-			pre, post = numberDomTree(w, pre, post)
-		}
-	}
+	// Number all nodes to enable O(1) dominance queries.
+	numberDomTree(root, 0, 0)
 }
 
 // numberDomTree sets the pre- and post-order numbers of a depth-first
