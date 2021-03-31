@@ -101,7 +101,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.FS(content)))
 
 	const addr = "localhost:18080"
-	log.Printf("Listening on %s...", addr)
+	log.Printf("listening on http://%s", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func onData(w http.ResponseWriter, req *http.Request) {
 		// Any additional fields will be accessible
 		// in the jstree node's .original field.
 		Package    int // -1 for non-package nodes
-		Imports    []string
+		Imports    []int
 		Dominators []int // path through dom tree, from package to root inclusive
 		Path       []int // path through package graph, from package to root inclusive
 	}
@@ -306,9 +306,9 @@ func onData(w http.ResponseWriter, req *http.Request) {
 				// item.State = { 'opened' : true, 'selected' : true }
 
 				item.Package = e.node.index
-				item.Imports = []string{} // avoid JSON null
+				item.Imports = []int{} // avoid JSON null
 				for _, imp := range e.node.imports {
-					item.Imports = append(item.Imports, imp.Package.ID)
+					item.Imports = append(item.Imports, imp.index)
 				}
 				for n := e.node; n != nil; n = n.Idom() {
 					item.Dominators = append(item.Dominators, n.index)

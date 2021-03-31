@@ -1,9 +1,9 @@
-body { margin: 1em; font-family: "Minion Pro", serif; }
+body { margin: 1em; font-family: "Minion Pro", serif; max-width: 1024px; }
 h1, h2, h3, h4, .jstree-default { font-family: Lato; } 
 code, pre { font-family: Consolas, monospace; }
 code.dom { font-weight: bold; }
-button { font-size: 50%; }
-pre#imports { font-size: 50%; max-height: 3em; overflow: scroll; }
+button { font-size: 90%; }
+pre#initial { margin-left: 1em; }
 
 /* the ⓘ symbol */
 .tooltip {

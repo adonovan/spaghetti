@@ -5,8 +5,6 @@ var broken = null // array of 2-arrays of int, the node ids of broken edges.
 
 function onLoad() {
     // Grab data from server: package graph, "directory" tree, broken edges.
-    // TODO(adonovan): opt: put JSON data in the /index.html page?
-    // There's no need for a second HTTP request.
     jQuery.ajax({url: "/data", success: onData})
 }
 
@@ -76,10 +74,9 @@ function onData(data) {
 function selectPkg(json) {
     if (json.Package < 0) {
 	// Non-package "directory" node: clear the fields.
-	$('#json').text("")
 	$('#pkgname').text("none")
 	$('#doc').text("")
-	$('#imports').text("")
+	$('#imports').html("")
 	$('#path').text("")
 	return
     }
@@ -87,25 +84,34 @@ function selectPkg(json) {
     // A package node was selected.
     var pkg = packages[json.Package]
 
-    // Show JSON, for debugging.   
-    $('#json').html("<code>" + JSON.stringify(json) + "</code>")
-
     // Show selected package.
     $('#pkgname').text(pkg.PkgPath)
 
-    // Set link to package documentation.
-    $('#doc').html("<a target='_blank' href='https://pkg.go.dev/" + pkg.PkgPath + "'>doc</a>")
-    
-    // TODO(adonovan): display imports as a set of links,
-    // with as ImportPath text and "select dir tree node" as action.
-    $('#imports').text(json.Imports.join(" "))
+    // Set link to Go package documentation.
+    $('#doc').html("<a title='doc' target='_blank' href='https://pkg.go.dev/" + pkg.PkgPath + "'><img src='https://pkg.go.dev/favicon.ico' width='16' height='16'/></a>")
+
+    // Show imports in a drop-down menu.
+    // Selecting an import acts like clicking on that package in the tree.
+    var imports = $('#imports')
+    imports.html("")
+    var option = document.createElement("option")
+    option.textContent = "..."
+    option.value = "-1"
+    imports.append(option)
+    for (var i in json.Imports) {
+	var imp = json.Imports[i]
+	option = document.createElement("option")
+	option.textContent = packages[imp].PkgPath
+	option.value = "" + imp // package index, used by onSelectImport
+	imports.append(option)
+    }
     
     // Show "break edges" buttons.
     var html = ""
     var path = [].concat(json.Path).reverse() // from root to selected package
     for (var i in path) {
 	var p = packages[path[i]]
-	if (i >= 0) {
+	if (i > 0) {
 	    html += "<button type='button' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", false)'>break</button> "
 		+ "<button type='button' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", true)'>break all</button> "
 		+ "⟶ "
@@ -123,4 +129,12 @@ function breakedge(i, j, all) {
 function unbreak(i, j) {
     // Must reload the page since the graph has changed.
     document.location = "/unbreak?from=" + i + "&to=" + j
+}
+
+// onSelectImport is called by the imports dropdown.
+function onSelectImport(sel) {
+    if (sel.value >= 0) {
+	// Simulate a click on a tree node corresponding to the selected import.
+	$('#tree').jstree('select_node', 'node' + sel.value);
+    }
 }

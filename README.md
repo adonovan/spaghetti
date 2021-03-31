@@ -36,4 +36,9 @@ at `localhost:18080`.
 This tool is a rewrite from scratch of a tool I wrote while at Google
 for exploring the dependency graphs used by the Blaze build system.
 The basic design could be easily be generalized to support any kind of
-dependency graph, independent of language or domain.
+dependency graph, independent of language or domain, or turned into a
+secure multi-user web service that operates on graph data uploaded from
+the client program that generates it.
+
+You can probably tell that web UIs are not my expertise.
+PRs that provide cosmetic improvements are most welcome!

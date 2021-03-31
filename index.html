@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Spaghetti</title>
+  <title>Spaghetti: dependency analysis for Go packages</title>
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
   <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Lato" />
   <link rel="stylesheet" type="text/css" href="/style.css" />
@@ -10,34 +10,36 @@
   <script src="/code.js"></script>
 </head>
 <body onload='onLoad()'>
-  <h1>Spaghetti</h1>
+  <h1>Spaghetti: dependency analysis for Go packages</h1>
   <p>
     This tool displays the complete dependencies of these initial packages:
   </p>
   <pre id='initial'>...</pre>
   <p>
-    Click on a package in the tree view to display information about
-    it, including a path by which it is reached from one of the
-    initial packages.  Use the <i>break</i> button to remove an
-    edge from the graph, so that you can assess what edges need to be
-    broken to remove an unwanted dependency.
+    Click on a package in the tree view to display information about it,
+    including a path by which it is reached from one of the initial packages.
+
+    Use the <i>break</i> button to remove an edge from the graph, so
+    that you can assess what edges need to be broken to eliminate an
+    unwanted dependency.
   </p>
 
   <h2>Packages</h2>
   <p>
+    <form style='display: inline;'>
     <span class="tooltip">ⓘ<span class="tooltiptext">
 	This tree shows all dependencies of the initial packages,
 	grouped hierarchically by import path and containing
-	module. <br/>
+	module. <br/><br/>
 
 	Each package has a numeric weight, computed using network
 	flow: this is the size of the graph rooted at the node,
-	divided by the node's in-degree. <br/>
+	divided by the node's in-degree. <br/><br/>
 
-	Click a package to show more information aboutit.</span></span>
-    <form style='display: inline;'>
+	Click a package to show more information about it.
+    </span></span>
       <label for='search'>Filter:
-	<input id='search' type='text' name='filter' size='50'/></label>
+	<input id='search' type='text' name='filter' size='70'/></label>
       <button onclick='this.form.search.value=""'>Clear</button>
     </form>
   </p>
@@ -45,26 +47,25 @@
     <div style='height: 20em;' id='tree'>tree</div>
   </div>
 
-  <h2>Selected package: <span id='pkgname'>none</span></h2>
-  <div id='json' style='display: none; overflow: scroll'>...</div> <!-- debugging -->
-  <p>
-    [<span id='doc'>...</span>]<br/>
-  </p>
+  <h2>Selected package: <span id='pkgname'>none</span>&nbsp;&nbsp;&nbsp;<span id='doc'></span></h2>
   <p>
     <span class="tooltip">ⓘ<span class="tooltiptext">This list shows the packages
 	directly imported by the selected package</span></span>   
-    <label for='imports'>Imports:</label>
-    <code id='imports'>...</code>
+    <label for='imports'>Imports: </label>
+    <select id='imports' onchange='onSelectImport(this)'></select>
   </p>
   <p>
-    <span class="tooltip">ⓘ<span class="tooltiptext">This section
-	displays an arbitrary path from one of the initial packages to
-	the selected package. Click the <i>break</i> button so see how
-	your dependencies would change if you were to remove a single
-	edge. Click <i>break all</i> to remove all inbound edges to a
+    <span class="tooltip">ⓘ<span class="tooltiptext">
+	This section displays an arbitrary path from one of the
+	initial packages to the selected package. Click
+	the <i>break</i> button so see how your dependencies would
+	change if you were to remove a single edge.<br/><br/>
+
+	Click <i>break all</i> to remove all inbound edges to a
 	package, removing it from the graph. This may be useful for
 	removing distracting packages that you don't plan to
-	eliminate.
+	eliminate.<br/><br/>
+	
 	The bold nodes are <i>dominators</i>: nodes that are found on
 	every path to the selected node. One way to break a dependency
 	on a package is to break all dependencies on any of its dominators.
