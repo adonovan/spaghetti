@@ -40,3 +40,5 @@ the client program that generates it.
 
 You can probably tell that web UIs are not my expertise.
 PRs that provide cosmetic improvements are most welcome!
+
+![Screenshot](screenshot.png)
