@@ -19,14 +19,12 @@ change as you work to remove specific imports.
 Once you are happy with the overall dependencies, the set of broken
 edges becomes your task list for a clean-up project.
 
-TODO(adonovan): include screenshots/video once UI is slightly more polished.
-
-Since it is not yet public, run it like so:
+Run it like so:
 
 ```shell
-$ git clone git@github.com:adonovan/spaghetti.git
-$ cd spaghetti
-$ go run . -- [package]
+$ go install github.com/adonovan/spaghetti@latest   # install in $HOME/go/bin
+$ ~/go/bin/spaghetti [package] &                    # run the server
+$ open http://localhost:8080                        # open in chrome, firefox, etc
 ```
 
 where _package_ is or more Go packages, or a pattern understood by `go
