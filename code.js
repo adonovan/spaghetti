@@ -77,6 +77,7 @@ function selectPkg(json) {
 	$('#pkgname').text("none")
 	$('#doc').text("")
 	$('#imports').html("")
+	$('#importedBy').html("")
 	$('#path').text("")
 	return
     }
@@ -92,20 +93,9 @@ function selectPkg(json) {
 
     // Show imports in a drop-down menu.
     // Selecting an import acts like clicking on that package in the tree.
-    var imports = $('#imports')
-    imports.html("")
-    var option = document.createElement("option")
-    option.textContent = "..."
-    option.value = "-1"
-    imports.append(option)
-    for (var i in json.Imports) {
-	var imp = json.Imports[i]
-	option = document.createElement("option")
-	option.textContent = packages[imp].PkgPath
-	option.value = "" + imp // package index, used by onSelectImport
-	imports.append(option)
-    }
-    
+    addImports($('#imports'), json.Imports)
+    addImports($('#importedBy'), json.ImportedBy)
+
     // Show "break edges" buttons.
     var html = ""
     var path = [].concat(json.Path).reverse() // from root to selected package
@@ -129,6 +119,23 @@ function breakedge(i, j, all) {
 function unbreak(i, j) {
     // Must reload the page since the graph has changed.
     document.location = "/unbreak?from=" + i + "&to=" + j
+}
+
+// addImports adds option elements to the select element,
+// one per package index in the packageIDs array.
+function addImports(select, packageIDs) {
+    select.html("")
+    var option = document.createElement("option")
+    option.textContent = "..."
+    option.value = "-1"
+    select.append(option)
+    for (var i in packageIDs) {
+	var imp = packageIDs[i]
+	option = document.createElement("option")
+	option.textContent = packages[imp].PkgPath
+	option.value = "" + imp // package index, used by onSelectImport
+	select.append(option)
+    }
 }
 
 // onSelectImport is called by the imports dropdown.

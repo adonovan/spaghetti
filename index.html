@@ -55,6 +55,12 @@
     <select id='imports' onchange='onSelectImport(this)'></select>
   </p>
   <p>
+    <span class="tooltip">ⓘ<span class="tooltiptext">This list shows the packages
+	that directly import the selected package</span></span>   
+    <label for='importedBy'>Imported by: </label>
+    <select id='importedBy' onchange='onSelectImport(this)'></select>
+  </p>
+  <p>
     <span class="tooltip">ⓘ<span class="tooltiptext">
 	This section displays an arbitrary path from one of the
 	initial packages to the selected package. Click

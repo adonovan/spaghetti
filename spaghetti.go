@@ -270,6 +270,7 @@ func onData(w http.ResponseWriter, req *http.Request) {
 		// in the jstree node's .original field.
 		Package    int // -1 for non-package nodes
 		Imports    []int
+		ImportedBy    []int  
 		Dominators []int // path through dom tree, from package to root inclusive
 		Path       []int // path through package graph, from package to root inclusive
 	}
@@ -322,6 +323,10 @@ func onData(w http.ResponseWriter, req *http.Request) {
 				item.Imports = []int{} // avoid JSON null
 				for _, imp := range e.node.imports {
 					item.Imports = append(item.Imports, imp.index)
+				}
+				item.ImportedBy = []int{} // avoid JSON null
+				for _, imp := range e.node.importedBy {
+					item.ImportedBy = append(item.ImportedBy, imp.index)
 				}
 				for n := e.node; n != nil; n = n.Idom() {
 					item.Dominators = append(item.Dominators, n.index)
