@@ -29,6 +29,8 @@ import (
 // - document that server is not concurrency-safe.
 
 func main() {
+	printVersion()
+
 	log.SetPrefix("spaghetti: ")
 	log.SetFlags(0)
 	flag.Parse()
@@ -188,9 +190,9 @@ type node struct {
 	modpath, modversion string // module, or ("std", "") for standard packages
 
 	// These fields are recomputed after a graph change.
-	imports, importedBy []*node // graph edges
-	weight              int     // weight computed by network flow
-	from                *node   // next link in path from a root node (nil if root)
+	imports, importedBy []*node       // graph edges
+	weight              int           // weight computed by network flow
+	from                *node         // next link in path from a root node (nil if root)
 	dom                 domInfo // dominator information
 }
 
@@ -270,7 +272,7 @@ func onData(w http.ResponseWriter, req *http.Request) {
 		// in the jstree node's .original field.
 		Package    int // -1 for non-package nodes
 		Imports    []int
-		ImportedBy    []int  
+		ImportedBy []int
 		Dominators []int // path through dom tree, from package to root inclusive
 		Path       []int // path through package graph, from package to root inclusive
 	}

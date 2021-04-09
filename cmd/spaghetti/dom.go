@@ -1,5 +1,6 @@
 package main
 
+
 // Dominator tree construction
 //
 // This file was plundered from golang.org/x/tools/go/ssa/dom.go and
@@ -67,8 +68,8 @@ func (b *node) Dominates(c *node) bool {
 type domInfo struct {
 	idom      *node   // immediate dominator (parent in domtree)
 	children  []*node // nodes immediately dominated by this one
-	pre, post int32   // pre- and post-order numbering within domtree
-	index     int32   // preorder index within reachable nodes; see "reachable hack"
+	pre, post int32        // pre- and post-order numbering within domtree
+	index     int32        // preorder index within reachable nodes; see "reachable hack"
 }
 
 // ltState holds the working state for Lengauer-Tarjan algorithm
