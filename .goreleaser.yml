@@ -12,7 +12,7 @@ gomod:
     - GOPRIVATE=example.com/blah
   # Which Go binary to use.
   # Defaults to `go`.
-  gobinary: go1.16
+  gobinary: go
 env:
   - GO111MODULE=on
   - GOPROXY=https://goproxy.io
