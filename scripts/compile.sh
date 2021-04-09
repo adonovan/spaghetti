@@ -25,7 +25,7 @@ echo "Building ${APP}..."
 COMMIT=$(git rev-parse HEAD)
 SHORTCOMMIT=$(git rev-parse --short HEAD)
 DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-VERSION="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
+VERSION="$(git describe --tags --always $(git rev-list --tags --max-count=1))"
 
 GOVERSION=$(go version | awk '{print $3;}')
 
