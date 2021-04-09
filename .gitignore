@@ -1,0 +1,6 @@
+.vscode/
+.idea/
+vendor/
+bin/
+tools/vendor/
+dist/
