@@ -5,11 +5,11 @@ dependencies of a Go program, and to explore and evaluate various
 possible efforts to eliminate dependencies.
 
 It displays the complete dependencies of the initial packages,
-organized into a tree based on the "directory structure" of the
+organized into a tree based on the directory structure of the
 package/module namespace.
 
 Clicking on a package node displays information about it,
-including an arbitary path to it from one of the initial packages.
+including an arbitrary path to it from one of the initial packages.
 Each edge in the path may be "broken", causing it to be removed
 from the graph and the view recomputed.
 The broken edges are tabulated, and each can be restored if you change
