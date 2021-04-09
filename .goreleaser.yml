@@ -1,0 +1,73 @@
+release:
+  github:
+    owner: adonovan
+    name: spaghetti
+
+env:
+  - GO111MODULE=on
+  - GOPROXY=https://goproxy.io
+before:
+  hooks:
+    - go mod tidy -v
+
+builds:
+  - id: cli
+    binary: spaghetti
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/spaghetti/
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.commit={{ .FullCommit }} -X main.date={{ .Date }} -X main.goversion={{ .Env.GOVERSION }}
+
+archives:
+  - id: cli
+    builds:
+      - cli
+    format: tar.gz
+    wrap_in_directory: true
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: 64-bit
+      386: 32-bit
+      darwin: macOS
+      linux: Tux
+    name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - LICENSE
+      - README.md
+checksum:
+  name_template: "{{ .ProjectName }}-{{ .Version }}-checksums.txt"
+
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^dev:"
+      - "README"
+      - "^readme"
+      - "^scripts"
+      - "scripts:"
+      - Merge pull request
+      - Merge branch
+      - Rebase on master
+      - "^Makefile"
+      - "goreleaser"
