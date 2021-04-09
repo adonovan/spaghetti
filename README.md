@@ -1,3 +1,8 @@
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/adonovan/spaghetti)
+[![GoDoc](https://godoc.org/github.com/adonovan/spaghetti?status.svg)](https://godoc.org/github.com/adonovan/spaghetti)
+[![Go [lint, build]](https://github.com/adonovan/spaghetti/actions/workflows/go.yml/badge.svg)](https://github.com/adonovan/spaghetti/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/adonovan/spaghetti)](https://goreportcard.com/report/github.com/adonovan/spaghetti)
+
 # Spaghetti: a dependency analysis tool for Go packages
 
 Spaghetti is an interactive web-based tool to help you understand the
@@ -19,12 +24,17 @@ change as you work to remove specific imports.
 Once you are happy with the overall dependencies, the set of broken
 edges becomes your task list for a clean-up project.
 
-Run it like so:
+### Install:
+- Install via `go install github.com/adonovan/spaghetti/cmd/spaghetti` 
+  (`go` should be installed locally: [Download and install Go](https://golang.org/doc/install))
+- Download binary from 
+  [![Latest release artifacts](https://img.shields.io/badge/artifacts-download-blue.svg)](https://github.com/adonovan/spaghetti/releases/latest)
 
+### Run it like so:
 ```shell
-$ go install github.com/adonovan/spaghetti@latest   # install in $HOME/go/bin
-$ ~/go/bin/spaghetti [package] &                    # run the server
-$ open http://localhost:8080                        # open in chrome, firefox, etc
+$ cd [PATH where spghetti was installed]    # or add the path to PATH and skip this step
+$ spaghetti [package] &                     # run the server
+$ open http://localhost:8080                # open in chrome, firefox, etc
 ```
 
 where _package_ is or more Go packages, or a pattern understood by `go
@@ -41,4 +51,6 @@ the client program that generates it.
 You can probably tell that web UIs are not my expertise.
 PRs that provide cosmetic improvements are most welcome!
 
-![Screenshot](screenshot.png)
+## Demo
+
+![Screenshot](.github/images/screenshot.png)
