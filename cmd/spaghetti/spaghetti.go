@@ -190,9 +190,9 @@ type node struct {
 	modpath, modversion string // module, or ("std", "") for standard packages
 
 	// These fields are recomputed after a graph change.
-	imports, importedBy []*node       // graph edges
-	weight              int           // weight computed by network flow
-	from                *node         // next link in path from a root node (nil if root)
+	imports, importedBy []*node // graph edges
+	weight              int     // weight computed by network flow
+	from                *node   // next link in path from a root node (nil if root)
 	dom                 domInfo // dominator information
 }
 
