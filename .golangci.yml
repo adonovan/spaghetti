@@ -1,0 +1,33 @@
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gofmt
+    - golint
+    - goimports
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  gofmt:
+    simplify: true
+  golint:
+    min-confidence: 0
+  goimports:
+    local-prefixes: melsoft/melmetrics/
+
+run:
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - vendor/
+  skip-files:
+    - \.pb\.go$
+
+issues:
+  exclude-use-default: false
+  exclude:
+    # for "public interface + private struct implementation" cases only!
+    - exported func * returns unexported type *, which can be annoying to use
+    - should have a package comment, unless it's in another file for this package
