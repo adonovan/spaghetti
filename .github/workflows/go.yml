@@ -40,3 +40,27 @@ jobs:
       - name: Lint
         run: |
           make lint-pipeline
+  
+  build:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [ 'ubuntu-20.04' ]
+        go: [ '1.16' ]
+    runs-on: ${{ matrix.os }}
+    name: Check build
+    steps:
+      - name: Set up go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16'
+  
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+        with:
+         fetch-depth: 0
+         
+      - name: Compile
+        run: |
+         make compile
