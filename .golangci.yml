@@ -15,7 +15,7 @@ linters-settings:
   golint:
     min-confidence: 0
   goimports:
-    local-prefixes: melsoft/melmetrics/
+    local-prefixes: github.com/adonovan/spaghetti/
 
 run:
   issues-exit-code: 1
