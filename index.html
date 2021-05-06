@@ -1,92 +1,144 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Spaghetti: dependency analysis for Go packages</title>
-  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+  <link rel="stylesheet" type="text/css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
   <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Lato" />
   <link rel="stylesheet" type="text/css" href="/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
   <script src="/code.js"></script>
 </head>
-<body onload='onLoad()'>
-  <h1>Spaghetti: dependency analysis for Go packages</h1>
-  <p>
-    This tool displays the complete dependencies of these initial packages:
-  </p>
-  <pre id='initial'>...</pre>
-  <p>
-    Click on a package in the tree view to display information about it,
-    including a path by which it is reached from one of the initial packages.
 
-    Use the <i>break</i> button to remove an edge from the graph, so
-    that you can assess what edges need to be broken to eliminate an
-    unwanted dependency.
-  </p>
+<body class="container" onload='onLoad()'>
+  <div class="card pt-5">
+    <header class="card-header has-background-black">
+      <p class="card-header-title is-size-3 has-text-white-ter">
+        Spaghetti: dependency analysis for Go packages
+      </p>
+    </header>
 
-  <h2>Packages</h2>
-  <p>
-    <form style='display: inline;'>
-    <span class="tooltip">ⓘ<span class="tooltiptext">
-	This tree shows all dependencies of the initial packages,
-	grouped hierarchically by import path and containing
-	module. <br/><br/>
+    <div class="card-content">
+      <p class="is-size-5 mb-2">This tool displays the complete dependencies of these initial packages:</p>
+      <p class="is-size-7 is-family-monospace"><span class="tag is-medium has-background-info-dark has-text-white-ter" id='initial'>...</span></p>
+      <hr class="my-3">
+      <p>
+        Click on a package in the tree view to display information about it,
+        including a path by which it is reached from one of the initial packages.
+        <br />
+        Use the <i>break</i> button to remove an edge from the graph, so
+        that you can assess what edges need to be broken to eliminate an
+        unwanted dependency.
+      </p>
+      <hr class="my-3">
+      <h3 class="is-size-5 mb-2">Packages</h3>
 
-	Each package has a numeric weight, computed using network
-	flow: this is the size of the graph rooted at the node,
-	divided by the node's in-degree. <br/><br/>
+      <form>
+        <div class="field has-addons mb-3">
+          <div class="control">
+            <span class="tooltip mt-2">ⓘ
+              <span class="tooltiptext">
+                This tree shows all dependencies of the initial packages,
+                grouped hierarchically by import path and containing
+                module. <br /><br />
+    
+                Each package has a numeric weight, computed using network
+                flow: this is the size of the graph rooted at the node,
+                divided by the node's in-degree. <br /><br />
+    
+                Click a package to show more information about it.
+              </span>
+            </span>
+            <p class="button is-static has-text-black">Filter:</p>
+          </div>
+          <div class="control">
+            <input class="input" id='search' type='text' name='filter' size='70' />
+          </div>
+          <div class="control">
+            <button class="button is-black" onclick='this.form.search.value=""'>Clear</button>
+          </div>
+        </div>
+      </form>
+      
+      <div style='overflow: auto; width: 100%; height: 20em; border: thin solid grey; display: inline-block' class="mb-2">
+        <div style='height: 20em;' id='tree'>tree</div>
+      </div>
 
-	Click a package to show more information about it.
-    </span></span>
-      <label for='search'>Filter:
-	<input id='search' type='text' name='filter' size='70'/></label>
-      <button onclick='this.form.search.value=""'>Clear</button>
-    </form>
-  </p>
-  <div style='overflow: auto; width: 65%; height: 20em; border: thin solid grey; display: inline-block'>
-    <div style='height: 20em;' id='tree'>tree</div>
+      <p class="is-size-4 mb-2 has-text-weight-bold">
+        <span>Selected package:</span>
+        <span id='pkgname'>
+          none
+        </span>&nbsp;&nbsp;&nbsp;
+        <span id='doc'></span>
+      </p>
+
+
+      <div class="field has-addons mb-2">
+        <div class="control">
+          <span class="tooltip mt-2">ⓘ
+            <span class="tooltiptext">This list shows the packages
+              directly imported by the selected package
+            </span>
+          </span>
+          <p class="button is-static has-text-black">Imports:</p>
+        </div>
+        <div class="control">
+          <div class="select">
+            <select id='imports' onchange='onSelectImport(this)'></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field has-addons mb-2">
+        <div class="control">
+          <span class="tooltip mt-2">ⓘ
+            <span class="tooltiptext">This list shows the packages
+            that directly import the selected package
+            </span>
+          </span>
+          <p class="button is-static has-text-black">Imported by:</p>
+        </div>
+        <div class="control">
+          <div class="select">
+            <select id='importedBy' onchange='onSelectImport(this)'></select>
+          </div>
+        </div>
+      </div>
+
+      <p>
+        <span class="tooltip">ⓘ<span class="tooltiptext">
+            This section displays an arbitrary path from one of the
+            initial packages to the selected package. Click
+            the <i>break</i> button so see how your dependencies would
+            change if you were to remove a single edge.<br /><br />
+
+            Click <i>break all</i> to remove all inbound edges to a
+            package, removing it from the graph. This may be useful for
+            removing distracting packages that you don't plan to
+            eliminate.<br /><br />
+
+            The bold nodes are <i>dominators</i>: nodes that are found on
+            every path to the selected node. One way to break a dependency
+            on a package is to break all dependencies on any of its dominators.
+          </span></span>
+        <label class="is-size-5" for='path'>Path from initial package:</label>
+      <div id='path'></div>
+      </p>
+
+      <h2>Broken edges</h2>
+      <span class="tooltip">ⓘ<span class="tooltiptext">This section lists
+          the edges you have broken so far. Click <i>unbreak</i> to
+          restore an edge and update the graph. Once you are happy with
+          the dependencies, you can use this as your to-do list for
+          refactoring.</span></span>
+      <div id='broken'>...</div>
+    </div>
   </div>
-
-  <h2>Selected package: <span id='pkgname'>none</span>&nbsp;&nbsp;&nbsp;<span id='doc'></span></h2>
-  <p>
-    <span class="tooltip">ⓘ<span class="tooltiptext">This list shows the packages
-	directly imported by the selected package</span></span>   
-    <label for='imports'>Imports: </label>
-    <select id='imports' onchange='onSelectImport(this)'></select>
-  </p>
-  <p>
-    <span class="tooltip">ⓘ<span class="tooltiptext">This list shows the packages
-	that directly import the selected package</span></span>   
-    <label for='importedBy'>Imported by: </label>
-    <select id='importedBy' onchange='onSelectImport(this)'></select>
-  </p>
-  <p>
-    <span class="tooltip">ⓘ<span class="tooltiptext">
-	This section displays an arbitrary path from one of the
-	initial packages to the selected package. Click
-	the <i>break</i> button so see how your dependencies would
-	change if you were to remove a single edge.<br/><br/>
-
-	Click <i>break all</i> to remove all inbound edges to a
-	package, removing it from the graph. This may be useful for
-	removing distracting packages that you don't plan to
-	eliminate.<br/><br/>
-	
-	The bold nodes are <i>dominators</i>: nodes that are found on
-	every path to the selected node. One way to break a dependency
-	on a package is to break all dependencies on any of its dominators.
-    </span></span>
-    <label for='path'>Path from initial package:</label>
-    <div id='path'></div>
-  </p>
-  
-  <h2>Broken edges</h2>
-  <span class="tooltip">ⓘ<span class="tooltiptext">This section lists
-      the edges you have broken so far. Click <i>unbreak</i> to
-      restore an edge and update the graph. Once you are happy with
-      the dependencies, you can use this as your to-do list for
-      refactoring.</span></span>
-  <div id='broken'>...</div>
-
 </body>
+
 </html>

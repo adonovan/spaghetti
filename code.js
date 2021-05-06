@@ -21,9 +21,9 @@ function onData(data) {
     var html = ""
     for (var i in broken) {
 	edge = broken[i]
-	html += "<button type='button' onclick='unbreak(" + edge[0] + ", " + edge[1] + ")'>unbreak</button> "
-	    + "<code>" + packages[edge[0]].PkgPath + "</code> ⟶ "
-	    + "<code>" + packages[edge[1]].PkgPath + "</code><br/>"
+	html += "<button type='button' class='button is-black mr-1 mt-1 mb-1' onclick='unbreak(" + edge[0] + ", " + edge[1] + ")'>unbreak</button> "
+	    + "<span class='tag is-medium mt-2 is-family-monospace'>" + packages[edge[0]].PkgPath + "</span> ⟶ "
+	    + "<span class='tag is-medium mt-2 is-family-monospace'>" + packages[edge[1]].PkgPath + "</span><br/>"
     }
     $('#broken').html(html)
 
@@ -102,11 +102,11 @@ function selectPkg(json) {
     for (var i in path) {
 	var p = packages[path[i]]
 	if (i > 0) {
-	    html += "<button type='button' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", false)'>break</button> "
-		+ "<button type='button' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", true)'>break all</button> "
-		+ "⟶ "
+	    html += "<button type='button' class='button is-black mr-1 mt-1 mb-1' onclick='breakedge(" + path[i-1] + ", " + path[i] + ", false)'>break</button> "
+            + "<button type='button' class='button is-black mt-1 mb-1' onclick='breakedge(" + path[i - 1] + ", " + path[i] + ", true)'>break all</button>"
+        html += "<span class='tag is-medium has-background-white mt-2'>⟶</span>"
 	}
-	html += "<code class='" + (json.Dominators.includes(path[i]) ? "dom" : "") + "'>" + p.PkgPath + "</code><br/>"
+	html += "<span class='" + (json.Dominators.includes(path[i]) ? "tag is-medium mt-2 is-family-monospace has-text-weight-bold mb-1" : "tag is-medium mt-2 is-family-monospace") + "'>" + p.PkgPath + "</span><br/>"
     }
     $('#path').html(html)
 }
